@@ -1,0 +1,12 @@
+﻿
+
+
+.TextStyle{
+    color:red;
+    font-family:'beIN Normal';
+    text-align:right;
+    border:double;
+    border-width:5px;
+    padding-top:20px;
+    margin-left:20px;
+}   
