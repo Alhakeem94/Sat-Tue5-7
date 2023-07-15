@@ -17,4 +17,9 @@
     <PackageReference Include="MudBlazor" Version="6.4.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Files\" />
+    <Folder Include="wwwroot\Signitures\" />
+  </ItemGroup>
+
 </Project>

@@ -1,30 +1,55 @@
 ﻿@page "/"
+@using Sat_Tue5_7.Models;
+@using Sat_Tue5_7.RepositoryPatterns.Interfaces;
+
+@inject IArchiving _Archiving 
+
+<div style="margin:10px;padding:20px">
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    @foreach (var item in ListOfAllArchives)
+    {
+        <MudCard >
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudAvatar Color="Color.Secondary">I</MudAvatar>
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.body1">@item.DocName</MudText>
+                    <MudText Typo="Typo.body2">@item.DocDate.ToShortDateString()</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Default" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardMedia Image="@item.ThumbnailPath" Height="250" />
+            <MudCardContent>
+                <MudText Typo="Typo.body2">From :@item.From -- To :@item.To</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudIconButton Icon="@Icons.Material.Filled.Favorite" Color="Color.Default" />
+                <MudIconButton Icon="@Icons.Material.Filled.Share" Color="Color.Default" />
+            </MudCardActions>
+        </MudCard>
+    }
+</div>
+</div>
 
 
 
-@inject Sat_Tue5_7.RepositoryPatterns.Interfaces.IArchiving ArchivingService
-
-
-<input type="number" @bind-value="Num1" />
-<input type="number" @bind-value="Num2" />
-<button @onclick="SumOfNumbers">Sum</button>
-
-
-<label>The Result Is : @Result</label>
 
 
 
+    
 @code{
 
-    public int Num1 { get; set; }
-    public int Num2 { get; set; }
+    public List<ArchivingModel> ListOfAllArchives { get; set; } = new List<ArchivingModel>();
 
-    public int Result { get; set; }
-
-
-    private void SumOfNumbers()
+    protected override async Task OnInitializedAsync()
     {
-        Result = ArchivingService.AddTwoNumbers(Num1, Num2);
+        ListOfAllArchives = await _Archiving.GetAllArchives();
     }
+
+
 
 }

@@ -1,0 +1,290 @@
+﻿@page "/AddArchivingFile"
+@using Sat_Tue5_7.Models;
+@using Sat_Tue5_7.RepositoryPatterns.Interfaces;
+
+@inject IWebHostEnvironment _env
+@inject IJSRuntime _js
+@inject ISnackbar _SnackBar
+@inject IArchiving _Archiving
+
+
+
+<div style="padding:20px;margin:20px;border:solid;border-color:lightblue;border-radius:20px;background-color:whitesmoke;box-shadow: 2px 5px;">
+    <EditForm OnValidSubmit="SaveDataToDbAndFileSystem" Model="ArchiveModel">
+           
+            <div class="row">
+                <div class="col">
+                    <MudTextField @bind-Value="ArchiveModel.DocName" Label="Document Name" HelperText="Enter Doc Name" Variant="Variant.Text" />
+                </div>
+                 <div class="col">
+                      <input style="margin-top:20px" type="datetime-local" class="form-control" @bind-value="ArchiveModel.DocDate" />
+                </div>
+                <div class="col">
+                      <MudTextField  @bind-Value="ArchiveModel.DocNumber" Label="Doc Number" HelperText="ex:127/g" Variant="Variant.Text" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <MudTextField  @bind-Value="ArchiveModel.To" Label="Sent To" HelperText="Ex:To The Ministry Of ....." Variant="Variant.Text" />
+                </div>
+                <div class="col">
+                    <MudTextField @bind-Value="ArchiveModel.From" Label="From" HelperText="From The Ministry Of ....." Variant="Variant.Text" />
+                </div>  
+            </div>
+            <br/>
+            <div class="row">
+                <div class="col">
+                    <MudTextField @bind-Value="ArchiveModel.Notes" @ref="multilineReference" T="string" Label="File Notes" Lines="3" Variant="Variant.Outlined" Text="@sampleText" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Api" OnAdornmentClick="@(() => multilineReference.SelectAsync())" />
+                </div>
+            </div>
+            <br/>
+            <div class="row">
+                <div class="col">
+                    <label>File (pdf)</label>
+                    <InputFile class="form-control"   OnChange="CheckFile" />
+                </div>
+                <div class="col">
+                     <label>File ThumbNail(png)</label>
+                <InputFile class="form-control"      OnChange="CheckThumbNail" />
+                </div>
+                <div class="col">
+                     <label>File Singiture(png)</label>
+                <InputFile class="form-control"      OnChange="CheckSigniture" />
+                </div>
+            </div>
+
+            <br/>
+            <MudButton ButtonType="ButtonType.Submit" Class="form-control" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info"  Size="Size.Large">Save</MudButton>
+
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+    </EditForm>
+</div>
+
+
+
+
+<label>@FileTypeAndFileSize</label>
+
+
+@code {
+
+    public ArchivingModel ArchiveModel { get; set; } = new ArchivingModel();
+
+    public string HelperText { get; set; }
+
+    private MudTextField<string> multilineReference;
+    string sampleText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+    public InputFileChangeEventArgs UserFile { get; set; }
+    public string FilePath { get; set; }
+
+    public InputFileChangeEventArgs Signiture { get; set; }
+    public string SigniturePath { get; set; }
+
+    public InputFileChangeEventArgs Image { get; set; }
+    public string ImagePath { get; set; }
+
+    public string FileTypeAndFileSize { get; set; } = "";
+
+
+
+    private async Task CheckFile(InputFileChangeEventArgs SelectedFile)
+    {
+        double FileSize = SelectedFile.File.Size;
+        var FileType = SelectedFile.File.ContentType;
+
+        if (FileSize <= 512000 && FileType == "application/pdf")
+        {
+            UserFile = SelectedFile;
+        }
+        else if (FileSize > 512000 && FileType == "application/pdf")
+        {
+            _SnackBar.Add("Please Upload A file that is less that 0.5 MB", Severity.Error);
+        }
+        else if (FileType != "application/pdf" && FileSize < 512000)
+        {
+            _SnackBar.Add("Please Upload A Pdf File only please", Severity.Error);
+        }
+        else if (FileSize > 512000 && FileType != "application/pdf")
+        {
+            _SnackBar.Add("Please Upload A Pdf File that is not bigger that 0.5 MB",Severity.Error);        
+        }
+    }
+
+    private async Task CheckThumbNail(InputFileChangeEventArgs SelectedThumbNail)
+    {
+        double FileSize = SelectedThumbNail.File.Size;
+        var FileType = SelectedThumbNail.File.ContentType;
+
+        if (FileSize <= 512000 && FileType == "image/jpeg")
+        {
+            Image = SelectedThumbNail;
+        }
+        else if (FileSize > 512000 && FileType == "image/jpeg")
+        {
+            _SnackBar.Add("Please Upload A jpg file that is less that 0.5 MB", Severity.Error);
+        }
+        else if (FileType != "application/pdf" && FileSize < 512000)
+        {
+            _SnackBar.Add("Please Upload a jpg File only please", Severity.Error);
+        }
+        else if (FileSize > 512000 && FileType != "image/jpeg")
+        {
+            _SnackBar.Add("Please Upload A jpg File that is not bigger that 0.5 MB", Severity.Error);
+        }
+    }
+
+    private async Task CheckSigniture(InputFileChangeEventArgs SelectedSigniture)
+    {
+        double FileSize = SelectedSigniture.File.Size;
+        var FileType = SelectedSigniture.File.ContentType;
+
+        if (FileSize <= 512000 && FileType == "image/jpeg")
+        {
+            Signiture = SelectedSigniture;
+        }
+        else if (FileSize > 512000 && FileType == "image/jpeg")
+        {
+            _SnackBar.Add("Please Upload An Image that is less that 0.5 MB", Severity.Error);
+        }
+        else if (FileType != "image/jpeg" && FileSize < 512000)
+        {
+            _SnackBar.Add("Please Upload an Image jpg only please", Severity.Error);
+        }
+        else if (FileSize > 512000 && FileType != "image/jpeg")
+        {
+            _SnackBar.Add("Please Upload a jpg File that is not bigger that 0.5 MB", Severity.Error);
+        }
+    }
+
+
+
+
+
+    private async Task SaveDataToDbAndFileSystem()
+    {
+        if (UserFile == null || Signiture == null || Image == null)
+        {
+            _SnackBar.Add("Please Upload the files", Severity.Warning);
+        }else if (UserFile == null && Signiture != null && Image != null)
+        {
+            _SnackBar.Add("Please Upload the File", Severity.Warning);
+        }
+        else
+        {
+            var FilePath = await UploadFileAndReturnFilePath(UserFile);
+            var ThumbNailpath = await UploadFileThumbNailAndReturnFilePath(Image);
+            var SigniturePath = await UploadFileSignnitureAndReturnFilePath(Signiture);
+
+            ArchiveModel.FilePath = FilePath;
+            ArchiveModel.ThumbnailPath = ThumbNailpath;
+            ArchiveModel.SigniturePath = SigniturePath;
+
+            var Message = await _Archiving.AddFileToTheDb(ArchiveModel);
+            _SnackBar.Add(Message, Severity.Success);
+            ArchiveModel = new ArchivingModel();
+            FilePath = "";
+            SigniturePath = "";
+            ThumbNailpath = "";
+        }
+        
+    }
+
+
+
+
+
+
+
+    //DesileExpenses 
+    public async Task<string> UploadFileAndReturnFilePath(InputFileChangeEventArgs UploadedFile)
+    {
+        var fileInfo = UploadedFile.File.Name;
+        var FileName = Guid.NewGuid().ToString() + fileInfo;   // Unique File Name
+                                                               //910273euijhdas5d87asdy6a5sd76
+        var FolderDirectory = $"{_env.WebRootPath}\\Files";    // Path To Storing Folder
+        var path = Path.Combine(FolderDirectory, FileName);
+        // "{_env.WebRootPath}\\Files+FileName"
+        // Sat-Tues5-7\\wwwroot\\Files\\910273euijhdas5d87asdy6aDesileExpenses.pdf
+
+        var memmoryStream = new MemoryStream();
+        await UploadedFile.File.OpenReadStream().CopyToAsync(memmoryStream);// Read The File as a byte array then copy the array to memory stream(RAM)
+
+
+        await using (var fs =  new FileStream(path,FileMode.Create, FileAccess.Write)) // Use File Stream to create the file in path with Create Access Auth
+        // to write the byte array to the created file
+        {
+            memmoryStream.WriteTo(fs); // transfter the byte array from memoryStream(RAM) to the FileStream
+        }
+
+        return  $"Files/{FileName}";  // return the Saved file path to the calling function 
+    }
+
+
+
+
+
+
+    // Takes The File And Automaticlly save it to the file system
+      public async Task<string> UploadFileSignnitureAndReturnFilePath(InputFileChangeEventArgs UploadedFileSigniture)
+    {
+        var fileInfo = UploadedFileSigniture.File.Name;
+        var FileName = Guid.NewGuid().ToString() + fileInfo;   // Unique File Name
+                                                               //910273euijhdas5d87asdy6a5sd76
+
+        var FolderDirectory = $"{_env.WebRootPath}\\Signitures";    // Path To Storing Folder
+        var path = Path.Combine(FolderDirectory, FileName);
+        // "{_env.WebRootPath}\\Files+FileName"
+        // Sat-Tues5-7\\wwwroot\\Files\\910273euijhdas5d87asdy6aDesileExpenses.pdf
+
+        var memmoryStream = new MemoryStream();
+        await UploadedFileSigniture.File.OpenReadStream().CopyToAsync(memmoryStream);// Read The File as a byte array then copy the array to memory stream(RAM)
+
+
+        await using (var fs =  new FileStream(path,FileMode.Create, FileAccess.Write)) // Use File Stream to create the file in path with Create Access Auth
+        // to write the byte array to the created file
+        {
+            memmoryStream.WriteTo(fs); // transfter the byte array from memoryStream(RAM) to the FileStream
+        }
+
+        return  $"Signitures/{FileName}";  // return the Saved file path to the calling function 
+    }
+
+
+
+
+
+
+
+    public async Task<string> UploadFileThumbNailAndReturnFilePath(InputFileChangeEventArgs UploadedFileThumbNail)
+    {
+        var fileInfo = UploadedFileThumbNail.File.Name;
+        var FileName = Guid.NewGuid().ToString() + fileInfo;   // Unique File Name
+                                                               //910273euijhdas5d87asdy6a5sd76
+
+        var FolderDirectory = $"{_env.WebRootPath}\\Images";    // Path To Storing Folder
+        var path = Path.Combine(FolderDirectory, FileName);
+        // "{_env.WebRootPath}\\Files+FileName"
+        // Sat-Tues5-7\\wwwroot\\Files\\910273euijhdas5d87asdy6aDesileExpenses.pdf
+
+        var memmoryStream = new MemoryStream();
+        await UploadedFileThumbNail.File.OpenReadStream().CopyToAsync(memmoryStream);// Read The File as a byte array then copy the array to memory stream(RAM)
+
+
+        await using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write)) // Use File Stream to create the file in path with Create Access Auth
+                                                                                       // to write the byte array to the created file
+        {
+            memmoryStream.WriteTo(fs); // transfter the byte array from memoryStream(RAM) to the FileStream
+        }
+
+        return $"Images/{FileName}";  // return the Saved file path to the calling function
+    }
+
+
+
+
+
+
+}
