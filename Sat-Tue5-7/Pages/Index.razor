@@ -3,13 +3,39 @@
 @using Sat_Tue5_7.RepositoryPatterns.Interfaces;
 
 @inject IArchiving _Archiving 
+@inject IJSRuntime _js
+@inject IWebHostEnvironment _env
+
+
+<style>
+    .zoom{
+        transition : transform .2s;
+    }
+
+    .zoom:hover{
+        transform:scale(1.1);
+    }
+
+    .Iconzoom {
+        transition: transform .2s;
+    }
+
+        .Iconzoom:hover {
+            transform: scale(1.7);
+        }
+
+</style>
+
+
+
+
+
 
 <div style="margin:10px;padding:20px">
-
 <div class="row row-cols-1 row-cols-md-3 g-4">
     @foreach (var item in ListOfAllArchives)
     {
-        <MudCard >
+        <MudCard Class="zoom" >
             <MudCardHeader>
                 <CardHeaderAvatar>
                     <MudAvatar Color="Color.Secondary">I</MudAvatar>
@@ -19,10 +45,13 @@
                     <MudText Typo="Typo.body2">@item.DocDate.ToShortDateString()</MudText>
                 </CardHeaderContent>
                 <CardHeaderActions>
-                    <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Default" />
+                        <MudMenu Icon="@Icons.Material.Filled.Settings" Color="Color.Primary" Class="Iconzoom">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Preview" IconColor="Color.Primary" OnClick="(()=>ViewPdfFile(item.FilePath))">View File</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Download" IconColor="Color.Primary" OnClick="(()=>DownloadFileToUser(item.DocName,item.FilePath))">Download File</MudMenuItem>
+                        </MudMenu>
                 </CardHeaderActions>
             </MudCardHeader>
-            <MudCardMedia Image="@item.ThumbnailPath" Height="250" />
+                <MudCardMedia Image="@item.ThumbnailPath" Height="250"  />
             <MudCardContent>
                 <MudText Typo="Typo.body2">From :@item.From -- To :@item.To</MudText>
             </MudCardContent>
@@ -50,6 +79,24 @@
         ListOfAllArchives = await _Archiving.GetAllArchives();
     }
 
+
+
+    private async Task ViewPdfFile(string PdfFilePath)
+    {
+        await _js.InvokeVoidAsync("OpenNewTab", PdfFilePath);
+    }
+
+
+    private async Task DownloadFileToUser(string FileName,string PdfFilePath)
+    {
+        var FullPath = $"{_env.WebRootPath}\\{PdfFilePath}"; // Sat-Tue5-7/wwwroot\\Files//FileName
+        var FileStream = File.OpenRead(FullPath);
+        var fileName = FileName;
+
+        using var streamRef = new DotNetStreamReference(stream: FileStream);
+
+        await _js.InvokeVoidAsync("downloadFileFromStream", $"{fileName}.pdf", streamRef);
+    }
 
 
 }
