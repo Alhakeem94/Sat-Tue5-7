@@ -1,0 +1,151 @@
+﻿@page "/AllArchivesInTable"
+@using Sat_Tue5_7.Models;
+@using Sat_Tue5_7.RepositoryPatterns.Interfaces;
+
+@inject IArchiving  _Archiving
+@inject IJSRuntime _js
+@inject IWebHostEnvironment _env
+@inject NavigationManager _Nav
+
+
+<MudTable ServerData="@(new Func<TableState, Task<TableData<ArchivingModel>>>(ServerReload))"
+          Dense="true" Hover="true" @ref="table">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Periodic Elements</MudText>
+        <MudSpacer />
+        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortLabel="DocName" T="ArchivingModel">Document Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="DocNum" T="ArchivingModel">Document Number</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="DocDate" T="ArchivingModel">Document Date</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="To" T="ArchivingModel">To</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="From" T="ArchivingModel">From</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="Actions" T="ArchivingModel">Actions</MudTableSortLabel></MudTh>
+
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nr">@context.DocName</MudTd>
+        <MudTd DataLabel="Sign">@context.DocNumber</MudTd>
+        <MudTd DataLabel="Name">@context.DocDate.ToShortDateString()</MudTd>
+        <MudTd DataLabel="Position">@context.To</MudTd>
+        <MudTd DataLabel="Molar mass">@context.From</MudTd>
+        <MudTd DataLabel="Actions">
+            <button class="btn btn-primary" @onclick="(()=>ViewPdfFile(context.FilePath))">Preview</button>
+            <button class="btn btn-secondary" @onclick="(()=>DownloadFileToUser(context.DocName,context.FilePath))">Download</button>
+            <MudIconButton OnClick="(()=>NavigateToPrint(context.Id))" Icon="@Icons.Material.Filled.Print" Color="Color.Warning"></MudIconButton>
+        </MudTd>
+
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+
+
+
+
+
+
+
+@code {
+
+
+
+    private IEnumerable<ArchivingModel> pagedData;
+    private MudTable<ArchivingModel> table;
+
+    private int totalItems;
+    private string searchString = null;
+
+
+
+
+
+    private async Task<TableData<ArchivingModel>> ServerReload(TableState state)
+    {
+        IEnumerable<ArchivingModel> data = await _Archiving.GetAllArchives();
+        await Task.Delay(300);
+        data = data.Where(element =>
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+                return true;
+            if (element.DocName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (element.DocNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if ($"{element.DocDate} {element.To} {element.From}".Contains(searchString))
+                return true;
+            return false;
+        }).ToArray();
+        totalItems = data.Count();
+        switch (state.SortLabel)
+        {
+            case "DocName":
+                data = data.OrderByDirection(state.SortDirection, o => o.DocName);
+                break;
+            case "DocNum":
+                data = data.OrderByDirection(state.SortDirection, o => o.DocNumber);
+                break;
+            case "DocDate":
+                data = data.OrderByDirection(state.SortDirection, o => o.DocDate);
+                break;
+            case "To":
+                data = data.OrderByDirection(state.SortDirection, o => o.To);
+                break;
+            case "From":
+                data = data.OrderByDirection(state.SortDirection, o => o.From);
+                break;
+            case "Notes":
+                data = data.OrderByDirection(state.SortDirection, o => o.Notes);
+                break;
+        }
+
+        pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<ArchivingModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        table.ReloadServerData();
+    }
+
+
+
+
+
+    private async Task ViewPdfFile(string PdfFilePath)
+    {
+        await _js.InvokeVoidAsync("OpenNewTab", PdfFilePath);
+    }
+
+
+    private async Task DownloadFileToUser(string FileName, string PdfFilePath)
+    {
+        var FullPath = $"{_env.WebRootPath}\\{PdfFilePath}"; // Sat-Tue5-7/wwwroot\\Files//FileName
+        var FileStream = File.OpenRead(FullPath);
+        var fileName = FileName;
+
+        using var streamRef = new DotNetStreamReference(stream: FileStream);
+
+        await _js.InvokeVoidAsync("downloadFileFromStream", $"{fileName}.pdf", streamRef);
+    }
+
+
+    private void NavigateToPrint(int FileId)
+    {
+        _Nav.NavigateTo($"/PrintableForm/{FileId}");
+    }
+
+
+
+}

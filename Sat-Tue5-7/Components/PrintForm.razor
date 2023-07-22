@@ -1,0 +1,85 @@
+﻿@page "/PrintableForm/{Id}"
+@using Microsoft.EntityFrameworkCore;
+@using Sat_Tue5_7.Data;
+@using Sat_Tue5_7.Models;
+
+@inject ApplicationDbContext _db
+
+
+<style>
+    .container {
+    width: 210mm;
+    height: 297mm;
+    margin: 20px auto;
+    padding: 10px;
+    border: 1px solid #ccc;
+    }
+
+    .img-thumbnail {
+        max-height: 100px;
+        max-width: 100px;
+    }
+</style>
+
+
+
+   <div class="row">
+       <div class="col">
+              <label>Doeument Name</label>
+              <input type="text" @bind-value="ArchiveFile.DocName" class="form-control" />
+       </div>
+        <div class="col">
+        <label>Doeument Number</label>
+            <input type="text" @bind-value="ArchiveFile.DocNumber" class="form-control" />
+        </div>
+   </div>
+    <div class="row">
+        <div class="col">
+            <label>Sent from</label>
+            <input type="text" @bind-value="ArchiveFile.From" class="form-control" />
+        </div>
+        <div class="col">
+            <label>Sent To</label>
+            <input type="text" @bind-value="ArchiveFile.To" class="form-control" />
+        </div>
+    </div>
+    <h3>@ArchiveFile.Notes</h3>
+    <div class="row">
+        <div class="col">
+        <label>Doc First Page</label>
+        <img src="@ArchiveFile.ThumbnailPath" width="200" />
+        </div>
+         <div class="col">
+        <label>Signiture Image</label>
+        <img src="@ArchiveFile.SigniturePath" width="200" />
+        </div>
+        
+    </div>
+
+
+
+
+      
+
+
+
+
+
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+    public ArchivingModel ArchiveFile { get; set; } = new ArchivingModel();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArchiveFile = await _db.ArchvingTable.FirstOrDefaultAsync(a => a.Id ==int.Parse(Id));
+    }
+
+
+
+
+}
